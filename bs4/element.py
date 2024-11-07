@@ -2267,35 +2267,42 @@ class SoupStrainer(object):
             isinstance(self.name, Callable)
             and not isinstance(markup_name, Tag))
 
-        if ((not self.name)
-            or call_function_with_tag_data
-            or (markup and self._matches(markup, self.name))
-            or (not markup and self._matches(markup_name, self.name))):
-            if call_function_with_tag_data:
-                match = self.name(markup_name, markup_attrs)
-            else:
+        if not self.name:
+            match = True
+        elif call_function_with_tag_data:
+            match = self.name(markup_name, markup_attrs)
+        elif markup:
+            if self._matches(markup, self.name):
                 match = True
-                markup_attr_map = None
-                for attr, match_against in list(self.attrs.items()):
-                    if not markup_attr_map:
-                        if hasattr(markup_attrs, 'get'):
-                            markup_attr_map = markup_attrs
-                        else:
-                            markup_attr_map = {}
-                            for k, v in markup_attrs:
-                                markup_attr_map[k] = v
-                    attr_value = markup_attr_map.get(attr)
-                    if not self._matches(attr_value, match_against):
-                        match = False
-                        break
-            if match:
-                if markup:
-                    found = markup
-                else:
-                    found = markup_name
-        if found and self.string and not self._matches(found.string, self.string):
-            found = None
-        return found
+            else:
+                match = False
+        elif not markup:
+            if self._matches(markup_name, self.name):
+                match = True
+            else:
+                match = False
+
+        if not call_function_with_tag_data and match:
+            match = True
+            markup_attr_map = None
+            for attr, match_against in list(self.attrs.items()):
+                if not markup_attr_map:
+                    if hasattr(markup_attrs, 'get'):
+                        markup_attr_map = markup_attrs
+                    else:
+                        markup_attr_map = {}
+                        for k, v in markup_attrs:
+                            markup_attr_map[k] = v
+                attr_value = markup_attr_map.get(attr)
+                if not self._matches(attr_value, match_against):
+                    match = False
+                    break
+
+        if match:
+            if markup:
+                found = markup
+            else:
+                found = markup_name
 
     # For BS3 compatibility.
     searchTag = search_tag
